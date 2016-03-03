@@ -32,7 +32,7 @@ router.post('/receive/:token', function(req, res) {
 
 		var options = {
 		  hostname: reqprocessor_host_url,
-		  path: '/api/reqprocessor/' + mytoken,
+		  path: '/api/reqprocessor/' + my_token,
 		  method: 'POST',
 		  headers: {
 		  	'Content-Type': 'application/json',
