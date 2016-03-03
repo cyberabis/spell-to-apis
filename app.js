@@ -14,5 +14,9 @@ app.use('/api/test', test);
 var telegram = require('./routes/telegram');
 app.use('/api/telegram', telegram);
 
+//ReqProcessor Route
+var reqprocessor = require('./routes/reqprocessor');
+app.use('/api/reqprocessor', reqprocessor);
+
 app.listen(port);
 console.log('SpellTo APIs is listening on port: ' + port);

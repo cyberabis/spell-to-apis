@@ -1,6 +1,6 @@
 ### Overall Architecture:
 
-Messenger -> Bot -><- RequestProcessor -> OutgoingWebHook -> ResponseProcessor -> Bot -> Messenger
+Messenger -> Bot -><- ReqProcessor -> OutgoingWebHook -> ResProcessor -> Bot -> Messenger
 
 ### Testing if the API server is up
 This is the routes/test.js
