@@ -1,6 +1,6 @@
 ### Overall Architecture:
 
-Messenger -> Bot -><- ReqProcessor -> OutgoingWebHook -> ResProcessor -> Bot -> Messenger
+Messenger -> Bot -><- ReqProcessor -><- OutgoingWebHook
 
 ### Testing if the API server is up
 This is the routes/test.js
@@ -9,7 +9,7 @@ This is the routes/test.js
 ### Running the Telegram Bot:
 This is routes/telegram.js
 1. Deploy the API app and get the https host URL 
-2. Set environment variables: BOT_API_TOKEN (As given by the telegram bot), MY_TOKEN (Anything we like)
+2. Set environment variables: BOT_API_TOKEN (As given by the telegram bot), MY_TOKEN (Anything we like), REQPROCESSOR_HOST_URL (Host where Reqprocessor is running).
 3. For the telegram bot, setWebhook should be set as https://<host>/api/telegram/receive/<mytoken>
 4. To send messages to the user chatting with the bot use the https://<host>/api/telegram/send/<mytoken> POST method.
 
