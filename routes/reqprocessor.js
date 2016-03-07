@@ -3,6 +3,7 @@ var router = express.Router();
 var https = require('https');
 var Firebase = require("firebase");
 var myFirebaseRef = new Firebase("https://spell-to.firebaseio.com/");
+var moment = require('moment');
 
 var telegram_token = process.env.TELEGRAM_TOKEN;
 var my_token = process.env.REQPROCESSOR_TOKEN;
@@ -31,9 +32,9 @@ router.post('/:token', function(req, res) {
 	if(token === my_token) {
 		//TODO Logic
 		//Check if any active spell for the user chat
-		var user_chat_id = req_payload.source + req_payload.user_id + req_payload.chat_id;
+		var user_chat_id = req_payload.source + '|' + req_payload.user_id + '|' + req_payload.chat_id;
 		console.log('User chat ID: ' + user_chat_id);
-		myFirebaseRef.child("user_chats/active/" + user_chat_id).once("value", function(data) {
+		myFirebaseRef.child('user_chats/active/' + user_chat_id).once('value', function(data) {
 			var active_spell = data.val();
 			console.log('Active Spell: ' + data.val());
 		  	if (active_spell === undefined || active_spell === null) {
@@ -43,10 +44,23 @@ router.post('/:token', function(req, res) {
 			    	var spell = data.val();
 			    	if (spell === undefined || spell === null) {
 			    		//Invalid spell, reply back as invalid
+			    		console.log('Invalid Spell requested: ' + message);
 			    		respond_to_bot(req_payload.source, req_payload.chat_id, 'Sorry, incorrect Spell!');
 			    	} else {
-			    		//Start the spell.
-			    		//TODO
+			    		//Valid Spell, Start new active spell for the user chat.
+			    		console.log('Valid Spell: ' + JSON.stringify(spell));
+			    		myFirebaseRef.child('user_chats/active/' + user_chat_id).set({
+						  spell: message,
+						  start_time: (new Date()).getTime()
+						});
+						//Check if spell has more options
+						if(spell.options === undefined || spell.options === null) {
+							//End Spell
+							end_spell(user_chat_id, spell);
+						} else {
+							//Process options
+							//TODO
+						}
 			    	}
 			    });
 			} else {
@@ -65,7 +79,6 @@ router.post('/:token', function(req, res) {
 });
 
 function respond_to_bot(source, chat_id, message) {
-
 	var bot_hostname;
 	if(source === 'telegram') {
 		bot_hostname =  telegram_host_url;
@@ -93,7 +106,7 @@ function respond_to_bot(source, chat_id, message) {
 	};
 
 	var bot_send = https.request(options, function(response) {
-	  console.log("Bot Send API response status code: ", response.statusCode);
+	  console.log('Bot Send API response status code: ', response.statusCode);
 	});
 	bot_send.on('error', function(e) {
 	  console.error(e);
@@ -101,7 +114,41 @@ function respond_to_bot(source, chat_id, message) {
 	bot_send.write(payload);
 	bot_send.end();
 	//End: Respond to Bot Send Method
+};
 
+function end_spell(user_chat_id, spell) {
+	//Get the spell from firebase
+	myFirebaseRef.child('user_chats/active/' + user_chat_id).once('value', function(data) {
+		var active_spell = data.val();
+		if(active_spell === undefined || active_spell === null){
+			//Nothing to do, if no active spell!
+			console.log('Wondering how to end a spell that is no there!');
+		} else {
+			//Close the active spell
+			myFirebaseRef.child('user_chats/active/' + user_chat_id).remove(function(error) {
+				if (error) {
+			  		console.log('Removal failed: ' + user_chat_id);
+			  	} else {
+			  		console.log('Removed active spell: ' + user_chat_id);
+			    	//Create an old entry
+			    	var old_spell = active_spell;
+			    	old_spell.end_time = (new Date).getTime();
+			    	var formattedDate = moment(new Date()).format('YYYYMMDD');
+				    myFirebaseRef.child('user_chats/old/' + formattedDate).push(old_spell, function(error) {
+				  		if (error) {
+				    		console.log('Archive failed: ' + user_chat_id);
+				  		} else {
+				  			console.log('Successfully archived: ' + user_chat_id);
+				  			//Call Outgoing Webhook
+				  			console.log('Going to make request to outgoing webhook: ' + JSON.stringify(active_spell));
+				  			console.log('Spell definition: ' + JSON.stringify(spell));
+				  			//TODO
+				  		}
+					});
+				}
+			});
+		}
+	});
 };
 
 module.exports = router;
