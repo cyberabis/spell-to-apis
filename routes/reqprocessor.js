@@ -56,7 +56,7 @@ router.post('/:token', function(req, res) {
 						//Check if spell has more options
 						if(spell.options === undefined || spell.options === null) {
 							//End Spell
-							end_spell(user_chat_id, spell);
+							end_spell(user_chat_id, spell, true);
 						} else {
 							//Process options
 							//TODO
@@ -116,7 +116,7 @@ function respond_to_bot(source, chat_id, message) {
 	//End: Respond to Bot Send Method
 };
 
-function end_spell(user_chat_id, spell) {
+function end_spell(user_chat_id, spell, call_outgoing_webhook) {
 	//Get the spell from firebase
 	myFirebaseRef.child('user_chats/active/' + user_chat_id).once('value', function(data) {
 		var active_spell = data.val();
@@ -139,10 +139,12 @@ function end_spell(user_chat_id, spell) {
 				    		console.log('Archive failed: ' + user_chat_id);
 				  		} else {
 				  			console.log('Successfully archived: ' + user_chat_id);
-				  			//Call Outgoing Webhook
-				  			console.log('Going to make request to outgoing webhook: ' + JSON.stringify(active_spell));
-				  			console.log('Spell definition: ' + JSON.stringify(spell));
-				  			//TODO
+				  			if(call_outgoing_webhook) {
+				  				//Call Outgoing Webhook
+				  				console.log('Going to make request to outgoing webhook: ' + JSON.stringify(active_spell));
+				  				console.log('Spell definition: ' + JSON.stringify(spell));
+				  				//TODO
+				  			}
 				  		}
 					});
 				}
