@@ -3,7 +3,8 @@ var router = express.Router();
 var https = require('https');
 
 var bot_api_token = process.env.BOT_API_TOKEN;
-var my_token = process.env.MY_TOKEN;
+var my_token = process.env.TELEGRAM_TOKEN;
+var reqprocessor_token = process.env.REQPROCESSOR_TOKEN;
 var reqprocessor_host_url = process.env.REQPROCESSOR_HOST_URL;
 
 //RECEIVE MESSAGE METHOD - INVOKED BY TELEGRAM API WEBHOOK
@@ -32,7 +33,7 @@ router.post('/receive/:token', function(req, res) {
 
 		var options = {
 		  hostname: reqprocessor_host_url,
-		  path: '/api/reqprocessor/' + my_token,
+		  path: '/api/reqprocessor/' + reqprocessor_token,
 		  method: 'POST',
 		  headers: {
 		  	'Content-Type': 'application/json',
