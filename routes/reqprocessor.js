@@ -68,6 +68,7 @@ router.post('/:token', function(req, res) {
 				//If escape command, exit the spell 
 				if(req_payload.text === 'bye') {
 					end_spell(user_chat_id, active_spell, null, false);
+					//TODO Respond to user
 				} else {
 					//To check answer, first get spell definition
 					myFirebaseRef.child('spells/' + active_spell.spell).once('value', function(data) {
@@ -104,8 +105,7 @@ router.post('/:token', function(req, res) {
 														} else {
 															console.log('Updated active spell answer: ' + user_chat_id);
 															//Continue and check for next requirement
-															var user_chat_keys = user_chat_id.split('|');
-															process_next_requirement(user_chat_keys[1], user_chat_id, active_spell, spell_definition);
+															process_next_requirement(user_chat_id, active_spell, spell_definition);
 														}
 													});
 												}
@@ -121,8 +121,7 @@ router.post('/:token', function(req, res) {
 												} else {
 													console.log('Updated active spell answer: ' + user_chat_id);
 													//Continue and check for next requirement
-													var user_chat_keys = user_chat_id.split('|');
-													process_next_requirement(user_chat_keys[1], user_chat_id, active_spell, spell_definition);
+													process_next_requirement(user_chat_id, active_spell, spell_definition);
 												}
 											});
 										} else if(required_spell_definition.question_type === 'options') {
@@ -137,8 +136,7 @@ router.post('/:token', function(req, res) {
 												} else {
 													console.log('Updated active spell answer: ' + user_chat_id);
 													//Continue and check for next requirement
-													var user_chat_keys = user_chat_id.split('|');
-													process_next_requirement(user_chat_keys[1], user_chat_id, active_spell, spell_definition);
+													process_next_requirement(user_chat_id, active_spell, spell_definition);
 												}
 											});
 										} else {
@@ -235,9 +233,6 @@ function end_spell(user_chat_id, active_spell, spell_definition, call_outgoing_w
 };
 
 function process_next_requirement(user_chat_id, active_spell, spell_definition){
-	console.log('Process next requirement for: ' + user_chat_id);
-	console.log('Active Spell received: ' + JSON.stringify(active_spell));
-	console.log('Spell Definition received: ' + JSON.stringify(spell_definition));
 	if(spell_definition.requirements === undefined || spell_definition.requirements === null) {
 		//End Spell
 		end_spell(user_chat_id, active_spell, spell_definition, true);
@@ -316,7 +311,7 @@ function process_next_requirement(user_chat_id, active_spell, spell_definition){
 										console.log('Updated active spell user information answer: ' + user_chat_id);
 										//Continue and check for next requirement
 										var user_chat_keys = user_chat_id.split('|');
-										process_next_requirement(user_chat_keys[1], user_chat_id, active_spell, spell_definition);
+										process_next_requirement(user_chat_id, active_spell, spell_definition);
 									}
 								});
 							}
