@@ -106,11 +106,11 @@ function respond_to_vendor_bot(source, chat_id, message) {
 	var vendorbot_api_req = https.request(options, function(response) {
 	  console.log("Vendor Bot API response status code: ", response.statusCode);
 	});
-	vendorbot_api_req_api_req.on('error', function(e) {
+	vendorbot_api_req.on('error', function(e) {
 	  console.error(e);
 	});
-	vendorbot_api_req_api_req.write(payload);
-	vendorbot_api_req_api_req.end();
+	vendorbot_api_req.write(payload);
+	vendorbot_api_req.end();
 	//End: Send Message to Vendor Telegram API
 };
 
