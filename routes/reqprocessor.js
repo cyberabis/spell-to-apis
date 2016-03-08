@@ -154,7 +154,6 @@ router.post('/:token', function(req, res) {
 									console.log('There is an active spell, but no open question: ' + user_chat_id);
 									end_spell(user_chat_id, active_spell, null, false);
 									respond_to_bot(req_payload.source, req_payload.chat_id, "Looks like some prob! Quiting previous request.");
-							}
 								}
 							} else {
 								//Something wrong, there is no open requirement in the spell. Let's close it.
