@@ -52,7 +52,7 @@ router.post('/registervendor/:token', function(req, res) {
 					//Respond saying unexpected command. Type <spell> <token> to register for Vendor Bot.
 					respond_to_vendor_bot(req_payload.source, req_payload.chat_id, 'Unexpected command. Type <spell> <token> to register for Vendor Bot.');
 				} else {
-					if( (spell_definition.webhook_token === webhook_token) && (spell_definition.webhook === 'default_webhook_url' + '/api/defaultwebhook/' ) ) {
+					if( (spell_definition.webhook_token === webhook_token) && (spell_definition.webhook === 'https://' + default_webhook_url + '/api/defaultwebhook/' ) ) {
 						//Register
 						var default_destination = {source: req_payload.source, user_id: req_payload.user_id, chat_id: req_payload.chat_id, created_time: (new Date()).getTime()};
 						myFirebaseRef.child('default_destinations/' + spell).set(default_destination, function(error) {
