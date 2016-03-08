@@ -235,6 +235,9 @@ function end_spell(user_chat_id, active_spell, spell_definition, call_outgoing_w
 };
 
 function process_next_requirement(user_chat_id, active_spell, spell_definition){
+	console.log('Process next requirement for: ' + user_chat_id);
+	console.log('Active Spell received: ' + JSON.stringify(active_spell));
+	console.log('Spell Definition received: ' + JSON.stringify(spell_definition));
 	if(spell_definition.requirements === undefined || spell_definition.requirements === null) {
 		//End Spell
 		end_spell(user_chat_id, active_spell, spell_definition, true);
