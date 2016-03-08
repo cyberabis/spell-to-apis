@@ -95,7 +95,7 @@ function respond_to_vendor_bot(source, chat_id, message) {
 
 	var options = {
 	  hostname: vendor_host_url,
-	  path: '/api/'+vendor_path+ '/send' + vendor_token,
+	  path: '/api/'+vendor_path+ '/send/' + vendor_token,
 	  method: 'POST',
 	  headers: {
 	  	'Content-Type': 'application/json',
