@@ -68,7 +68,7 @@ router.post('/:token', function(req, res) {
 				//If escape command, exit the spell 
 				if(req_payload.text === 'bye') {
 					end_spell(user_chat_id, active_spell, null, false);
-					//TODO Respond to user
+					respond_to_bot(req_payload.source, req_payload.chat_id, "Ok! Quiting this request.");
 				} else {
 					//To check answer, first get spell definition
 					myFirebaseRef.child('spells/' + active_spell.spell).once('value', function(data) {
@@ -360,6 +360,7 @@ function process_next_requirement(user_chat_id, active_spell, spell_definition){
 						}
 					});
 				} else if(next_requirement.question_type === 'options') {
+					console.log('For reference, Spell Definition: ' + JSON.stringify(spell_definition));
 					var prompt_question = next_requirement.question + '. Type from below options: ' + JSON.stringify(spell_definition.requirements[next_requirement_id].options);
 					//Update active spell and prompt for answer
 					if(active_spell.requirements === undefined || active_spell.requirements === null)
