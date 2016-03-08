@@ -80,8 +80,10 @@ router.post('/:token', function(req, res) {
 			    		} else {
 			    			//Find the requirement that's asked
 			    			if(active_spell.requirements != undefined && active_spell.requirements != null) {
+			    				var found_open_requirement = false;
 								for(requirement_id in active_spell.requirements) {
 									if(active_spell.requirements[requirement_id].status ==='asked') {
+										found_open_requirement = true;
 										var required_spell_definition = spell_definition.requirements[requirement_id];
 										if(required_spell_definition.question_type === 'user_information') {
 											//TODO Validate if response is of right format
@@ -91,7 +93,8 @@ router.post('/:token', function(req, res) {
 												user_info_update = {email: req_payload.text};
 											if(required_spell_definition.question =='phone')
 												user_info_update = {phone: req_payload.text};
-											myFirebaseRef.child('user_information/' + user_id).update(user_info_update, function(error) {
+											var user_chat_keys = user_chat_id.split('|');
+											myFirebaseRef.child('user_information/' + user_chat_keys[1]).update(user_info_update, function(error) {
 												if(error) {
 													console.log('Default user information update failed. ' + JSON.stringify(active_spell));
 												} else {
@@ -146,10 +149,18 @@ router.post('/:token', function(req, res) {
 										break;
 									}
 								}
+								if(!found_open_requirement) {
+									//Something wrong, there is no open requirement in the spell. Let's close it.
+									console.log('There is an active spell, but no open question: ' + user_chat_id);
+									end_spell(user_chat_id, active_spell, null, false);
+									respond_to_bot(req_payload.source, req_payload.chat_id, "Looks like some prob! Quiting previous request.");
+							}
+								}
 							} else {
 								//Something wrong, there is no open requirement in the spell. Let's close it.
 								console.log('There is an active spell, but no open question: ' + user_chat_id);
 								end_spell(user_chat_id, active_spell, null, false);
+								respond_to_bot(req_payload.source, req_payload.chat_id, "Looks like some prob! Quiting previous request.");
 							}
 			    		}
 			    	});
