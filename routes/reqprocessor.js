@@ -293,7 +293,8 @@ function process_next_requirement(user_chat_id, active_spell, spell_definition){
 				next_requirement = spell_definition.requirements[next_requirement_id];
 				if(next_requirement.question_type === 'user_information') {
 					//Check if user data already set.
-					myFirebaseRef.child('user_information/' + user_id).once('value', function(data) {
+					var user_chat_keys = user_chat_id.split('|');
+					myFirebaseRef.child('user_information/' + user_chat_keys[1]).once('value', function(data) {
 						var user_information = data.val();
 						var user_information_exists = false;
 						if(user_information != undefined && user_information != null) {
@@ -310,7 +311,6 @@ function process_next_requirement(user_chat_id, active_spell, spell_definition){
 									} else {
 										console.log('Updated active spell user information answer: ' + user_chat_id);
 										//Continue and check for next requirement
-										var user_chat_keys = user_chat_id.split('|');
 										process_next_requirement(user_chat_id, active_spell, spell_definition);
 									}
 								});
