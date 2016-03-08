@@ -359,6 +359,7 @@ function process_next_requirement(user_chat_id, active_spell, spell_definition){
 					var prompt_question = next_requirement.question + '. Type from below options: ' + JSON.stringify(spell_definition.requirements[next_requirement_id].options);
 					//Update active spell and prompt for answer
 					active_spell.requirements[next_requirement_id] = {question: next_requirement.question, status: 'asked'};
+					console.log('Updating active spell with asked requirement: ' + JSON.stringify(active_spell));
 					myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
 						if(error) {
 							console.log('Error while updating active spell user information answer: ' + user_chat_id);
