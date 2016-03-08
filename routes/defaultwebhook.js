@@ -102,6 +102,7 @@ function respond_to_vendor_bot(source, chat_id, message) {
 	  	'Content-Length': payload.length
 	  }
 	};
+	console.log('Vendor Bot API options: ' + JSON.stringify(options));
 
 	var vendorbot_api_req = https.request(options, function(response) {
 	  console.log("Vendor Bot API response status code: ", response.statusCode);
