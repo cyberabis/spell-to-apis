@@ -30,7 +30,6 @@ router.post('/:token', function(req, res) {
 
 	//Authenticate token
 	if(token === my_token) {
-		//TODO Logic
 		//Check if any active spell for the user chat
 		var user_chat_id = req_payload.source + '|' + req_payload.user_id + '|' + req_payload.chat_id;
 		console.log('User chat ID: ' + user_chat_id);
@@ -40,32 +39,123 @@ router.post('/:token', function(req, res) {
 		  	if (active_spell === undefined || active_spell === null) {
 			    //create a new spell if command is valid
 			    var message = req_payload.text;
-			    myFirebaseRef.child("spells/" + message).once("value", function(data) {
-			    	var spell = data.val();
-			    	if (spell === undefined || spell === null) {
+			    myFirebaseRef.child('spells/' + message).once('value', function(data) {
+			    	var spell_definition = data.val();
+			    	if (spell_definition === undefined || spell_definition === null) {
 			    		//Invalid spell, reply back as invalid
 			    		console.log('Invalid Spell requested: ' + message);
-			    		respond_to_bot(req_payload.source, req_payload.chat_id, 'Sorry, incorrect Spell!');
+			    		respond_to_bot(req_payload.source, req_payload.chat_id, 'Sorry, I could not understand this request!');
 			    	} else {
 			    		//Valid Spell, Start new active spell for the user chat.
-			    		console.log('Valid Spell: ' + JSON.stringify(spell));
-			    		myFirebaseRef.child('user_chats/active/' + user_chat_id).set({
+			    		console.log('Valid Spell: ' + JSON.stringify(spell_definition));
+			    		var active_spell = {
 						  spell: message,
 						  start_time: (new Date()).getTime()
-						});
-						//Check if spell has more options
-						if(spell.options === undefined || spell.options === null) {
-							//End Spell
-							end_spell(user_chat_id, spell, true);
-						} else {
-							//Process options
-							//TODO
-						}
+						};
+			    		myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
+			    			if(error){
+			    				console.log('Failed while starting a new spell');
+			    			} else {
+			    				console.log('Started a new spell: ' + JSON.stringify(active_spell) + '. For user chat: ' + user_chat_id);
+			    				//Check if spell has more requirements
+								process_next_requirement(user_chat_id, active_spell, spell_definition);
+			    			}
+			    		});
 			    	}
 			    });
 			} else {
-				//check if valid option
-				//TODO
+				//check if valid answer (if there is an active spell we should be waiting for an answer)
+				//If escape command, exit the spell 
+				if(req_payload.text === 'bye') {
+					end_spell(user_chat_id, active_spell, null, false);
+				} else {
+					//To check answer, first get spell definition
+					myFirebaseRef.child('spells/' + active_spell.spell).once('value', function(data) {
+			    		var spell_definition = data.val();
+			    		if (spell_definition === undefined || spell_definition === null) {
+			    			//Invalid spell, reply back as invalid
+			    			console.log('Looks like spell definition is no longer valid: ' + active_spell.spell);
+			    			end_spell(user_chat_id, active_spell, null, false);
+			    		} else {
+			    			//Find the requirement that's asked
+			    			if(active_spell.requirements != undefined && active_spell.requirements != null) {
+								for(requirement_id in active_spell.requirements) {
+									if(active_spell.requirements[requirement_id].status ==='asked') {
+										var required_spell_definition = spell_definition.requirements[requirement_id];
+										if(required_spell_definition.question_type === 'user_information') {
+											//TODO Validate if response is of right format
+											//Update user_information table and the active spell with the response
+											var user_info_update = {};
+											if(required_spell_definition.question =='email')
+												user_info_update = {email: req_payload.text};
+											if(required_spell_definition.question =='phone')
+												user_info_update = {phone: req_payload.text};
+											myFirebaseRef.child('user_information/' + user_id).update(user_info_update, function(error) {
+												if(error) {
+													console.log('Default user information update failed. ' + JSON.stringify(active_spell));
+												} else {
+													//Update active spell
+													active_spell.requirements[requirement_id].answer = req_payload.text;
+													active_spell.requirements[requirement_id].status = 'answered';
+													//Update database and recurse
+													myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
+														if(error) {
+															console.log('Error while updating active spell with answer: ' + user_chat_id);
+														} else {
+															console.log('Updated active spell answer: ' + user_chat_id);
+															//Continue and check for next requirement
+															var user_chat_keys = user_chat_id.split('|');
+															process_next_requirement(user_chat_keys[1], user_chat_id, active_spell, spell_definition);
+														}
+													});
+												}
+											});
+										} else if(required_spell_definition.question_type === 'text') {
+											//Update the active spell with the response
+											active_spell.requirements[requirement_id].answer = req_payload.text;
+											active_spell.requirements[requirement_id].status = 'answered';
+											//Update database and recurse
+											myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
+												if(error) {
+													console.log('Error while updating active spell with answer: ' + user_chat_id);
+												} else {
+													console.log('Updated active spell answer: ' + user_chat_id);
+													//Continue and check for next requirement
+													var user_chat_keys = user_chat_id.split('|');
+													process_next_requirement(user_chat_keys[1], user_chat_id, active_spell, spell_definition);
+												}
+											});
+										} else if(required_spell_definition.question_type === 'options') {
+											//TODO Validate if response is a valid option
+											//Update the active spell with the response
+											active_spell.requirements[requirement_id].answer = req_payload.text;
+											active_spell.requirements[requirement_id].status = 'answered';
+											//Update database and recurse
+											myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
+												if(error) {
+													console.log('Error while updating active spell with answer: ' + user_chat_id);
+												} else {
+													console.log('Updated active spell answer: ' + user_chat_id);
+													//Continue and check for next requirement
+													var user_chat_keys = user_chat_id.split('|');
+													process_next_requirement(user_chat_keys[1], user_chat_id, active_spell, spell_definition);
+												}
+											});
+										} else {
+											//This is unlikely
+											console.log('Unknown requirement question type. Check definition: ' + JSON.stringify(spell_definition) + '. User Chat ID ' + user_chat_id);
+										}
+										break;
+									}
+								}
+							} else {
+								//Something wrong, there is no open requirement in the spell. Let's close it.
+								console.log('There is an active spell, but no open question: ' + user_chat_id);
+								end_spell(user_chat_id, active_spell, null, false);
+							}
+			    		}
+			    	});
+				}
 			}
 		});
 
@@ -116,41 +206,178 @@ function respond_to_bot(source, chat_id, message) {
 	//End: Respond to Bot Send Method
 };
 
-function end_spell(user_chat_id, spell, call_outgoing_webhook) {
-	//Get the spell from firebase
-	myFirebaseRef.child('user_chats/active/' + user_chat_id).once('value', function(data) {
-		var active_spell = data.val();
-		if(active_spell === undefined || active_spell === null){
-			//Nothing to do, if no active spell!
-			console.log('Wondering how to end a spell that is no there!');
-		} else {
-			//Close the active spell
-			myFirebaseRef.child('user_chats/active/' + user_chat_id).remove(function(error) {
-				if (error) {
-			  		console.log('Removal failed: ' + user_chat_id);
-			  	} else {
-			  		console.log('Removed active spell: ' + user_chat_id);
-			    	//Create an old entry
-			    	var old_spell = active_spell;
-			    	old_spell.end_time = (new Date).getTime();
-			    	var formattedDate = moment(new Date()).format('YYYYMMDD');
-				    myFirebaseRef.child('user_chats/old/' + formattedDate).push(old_spell, function(error) {
-				  		if (error) {
-				    		console.log('Archive failed: ' + user_chat_id);
-				  		} else {
-				  			console.log('Successfully archived: ' + user_chat_id);
-				  			if(call_outgoing_webhook) {
-				  				//Call Outgoing Webhook
-				  				console.log('Going to make request to outgoing webhook: ' + JSON.stringify(active_spell));
-				  				console.log('Spell definition: ' + JSON.stringify(spell));
-				  				//TODO
-				  			}
-				  		}
-					});
-				}
+function end_spell(user_chat_id, active_spell, spell_definition, call_outgoing_webhook) {
+	//Close the active spell
+	myFirebaseRef.child('user_chats/active/' + user_chat_id).remove(function(error) {
+		if (error) {
+	  		console.log('Removal failed: ' + user_chat_id);
+	  	} else {
+	  		console.log('Removed active spell: ' + user_chat_id);
+	    	//Create an old entry
+	    	var old_spell = active_spell;
+	    	old_spell.end_time = (new Date).getTime();
+	    	var formattedDate = moment(new Date()).format('YYYYMMDD');
+		    myFirebaseRef.child('user_chats/old/' + formattedDate).push(old_spell, function(error) {
+		  		if (error) {
+		    		console.log('Archive failed: ' + user_chat_id);
+		  		} else {
+		  			console.log('Successfully archived: ' + user_chat_id);
+		  			if(call_outgoing_webhook) {
+		  				//Call Outgoing Webhook
+		  				console.log('Going to make request to outgoing webhook: ' + JSON.stringify(active_spell));
+		  				console.log('Spell definition: ' + JSON.stringify(spell_definition));
+		  				//TODO
+		  			}
+		  		}
 			});
 		}
 	});
+};
+
+function process_next_requirement(user_chat_id, active_spell, spell_definition){
+	if(spell_definition.requirements === undefined || spell_definition.requirements === null) {
+		//End Spell
+		end_spell(user_chat_id, active_spell, spell_definition, true);
+	} else {
+		var active_spell_req_level = 0;
+		var spell_definition_req_level = 0;
+		var user_information_requirements = [];
+		var other_requirements = [];
+		var completed_requirements = [];
+		//Structure Spell Definition Requirements
+		for(requirement_id in spell_definition.requirements) {
+			spell_definition_req_level++;
+			var requirement = spell_definition.requirements[requirement_id];
+			if(requirement.question_type === 'user_information'){
+				user_information_requirements.push(requirement_id);
+			} else {
+				other_requirements.push(requirement_id);
+			}
+		}
+		console.log('Number of user information requirements in spell definition: ' + user_information_requirements.length);	
+		console.log('Total requirements in spell definition: ' + spell_definition_req_level);	
+		//Check completed Requirements
+		if(active_spell.requirements != undefined && active_spell.requirements != null) {
+			for(requirement_id in active_spell.requirements) {
+				active_spell_req_level++;
+				completed_requirements.push(requirement_id);
+			}
+		}
+		console.log('Completed requirements: ' + active_spell_req_level);
+		if(spell_definition_req_level === active_spell_req_level) {
+			console.log('No further requirements for: ' + user_chat_id);
+			//End the active spell
+			end_spell(user_chat_id, active_spell, spell_definition, true);
+		} else {
+			//Find next pending Requirement
+			var next_requirement_id = null;
+			//See if all other requirements are completed
+			for(var i=0; i<other_requirements.length; i++){
+				if(completed_requirements.indexOf(other_requirements[i]) < 0){
+					console.log('Pending other requirement: ' + other_requirements[i] + '. For: ' + user_chat_id);
+					next_requirement_id = other_requirements[i];
+					break;
+				}
+			}
+			if(next_requirement_id === null){
+				//See if all user information requirements are completed
+				 for(var i=0; i<user_information_requirements.length; i++){
+					if(completed_requirements.indexOf(user_information_requirements[i]) < 0){
+						console.log('Pending user information requirement: ' + user_information_requirements[i] + '. For: ' + user_chat_id);
+						next_requirement_id = user_information_requirements[i];
+						break;
+					}
+				}
+			}
+			if(next_requirement_id != null) {
+				//Process the requirement
+				//Get definition
+				next_requirement = spell_definition.requirements[next_requirement_id];
+				if(next_requirement.question_type === 'user_information') {
+					//Check if user data already set.
+					myFirebaseRef.child('user_information/' + user_id).once('value', function(data) {
+						var user_information = data.val();
+						var user_information_exists = false;
+						if(user_information != undefined && user_information != null) {
+							if(user_information[next_requirement.question] != undefined && user_information[next_requirement.question] != null ) {
+								user_information_exists = true;
+								//Set requirement in active_spell with default data
+								active_spell.requirements[next_requirement_id] = {question: next_requirement.question, answer: user_information[next_requirement.question], status: 'auto_filled'};
+								//Update database and recurse
+								myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
+									if(error) {
+										console.log('Error while updating active spell user information answer: ' + user_chat_id);
+									} else {
+										console.log('Updated active spell user information answer: ' + user_chat_id);
+										//Continue and check for next requirement
+										var user_chat_keys = user_chat_id.split('|');
+										process_next_requirement(user_chat_keys[1], user_chat_id, active_spell, spell_definition);
+									}
+								});
+							}
+						} 
+						if(!user_information_exists){
+							//Prompt to enter user information
+							var prompt_question = '';
+							if(next_requirement.question === 'email') {
+								prompt_question = 'Type your email ID. This will be a one time entry, to change later use the "contact" spell';
+							} else if(next_requirement.question === 'phone') {
+								prompt_question = 'Type your mobile phone number. This will be a one time entry, to change later use the "contact" spell';
+							} else {
+								console.log('Unexpected user information question: ' + user_chat_id);
+								prompt_question = 'Type ' + next_requirement.question;
+							}
+							//TODO for address, location, name etc.
+							//Update active spell and prompt for answer
+							active_spell.requirements[next_requirement_id] = {question: next_requirement.question, status: 'asked'};
+							myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
+								if(error) {
+									console.log('Error while updating active spell user information answer: ' + user_chat_id);
+								} else {
+									console.log('Updated active spell user information answer: ' + user_chat_id);
+									//Call respond_to_bot for getting answer
+									var user_chat_keys = user_chat_id.split('|');
+									respond_to_bot(user_chat_keys[0], user_chat_keys[2], prompt_question);
+								}
+							});
+						}
+					});
+				} else if(next_requirement.question_type === 'text') {
+					//Update active spell and prompt for answer
+					active_spell.requirements[next_requirement_id] = {question: next_requirement.question, status: 'asked'};
+					myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
+						if(error) {
+							console.log('Error while updating active spell user information answer: ' + user_chat_id);
+						} else {
+							console.log('Updated active spell user information answer: ' + user_chat_id);
+							//Call respond_to_bot for getting answer
+							var user_chat_keys = user_chat_id.split('|');
+							respond_to_bot(user_chat_keys[0], user_chat_keys[2], next_requirement.question);
+						}
+					});
+				} else if(next_requirement.question_type === 'options') {
+					var prompt_question = next_requirement.question + '. Type from below options: ' + JSON.stringify(spell_definition.requirements[next_requirement_id].options);
+					//Update active spell and prompt for answer
+					active_spell.requirements[next_requirement_id] = {question: next_requirement.question, status: 'asked'};
+					myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
+						if(error) {
+							console.log('Error while updating active spell user information answer: ' + user_chat_id);
+						} else {
+							console.log('Updated active spell user information answer: ' + user_chat_id);
+							//Call respond_to_bot for getting answer
+							var user_chat_keys = user_chat_id.split('|');
+							respond_to_bot(user_chat_keys[0], user_chat_keys[2], prompt_question);
+						}
+					});
+				} else {
+					console.log('Unknown requirement question type. Check definition: ' + JSON.stringify(spell_definition) + '. User Chat ID ' + user_chat_id);
+				}
+			} else {
+				console.log('Unable to find next requirement! Spell Definition levels: ' + spell_definition_req_level + '. Active Spell levels: ' + active_spell_req_level);
+			}
+		}
+	}
+
 };
 
 module.exports = router;
