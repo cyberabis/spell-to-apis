@@ -237,7 +237,7 @@ function respond_to_bot(source, chat_id, message) {
 };
 
 function end_spell(user_chat_id, active_spell, spell_definition, call_outgoing_webhook) {
-	if( (call_outgoing_webhook = true) && 
+	if( (call_outgoing_webhook == true) && 
 		(spell_definition.dont_reconfirm === undefined || spell_definition.dont_reconfirm === null || spell_definition.dont_reconfirm === false) &&
 		(active_spell.reconfirmed === undefined || active_spell.reconfirmed === null || active_spell.reconfirmed === false) ) {
 		//Mark active spell as awaiting confirmation
