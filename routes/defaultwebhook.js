@@ -87,7 +87,7 @@ function respond_to_vendor_bot(source, chat_id, message) {
 	}
 	//Start: Send Message to Vendor Telegram API
 	var d = {
-		chat_id: message.chat.id,
+		chat_id: chat_id,
 		text: message
 	};
 	var payload = JSON.stringify(d);
