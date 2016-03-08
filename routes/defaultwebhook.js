@@ -121,13 +121,18 @@ router.post('/:token', function(req, res) {
 	var token = req.params.token;
 	var req_payload = req.body;
 	
+	//eg: {"spell":"hello","start_time":1457438451880,"end_time":1457438451958,"user_chat_id":"telegram|81390528|81390528"}
 	console.log('Request received by Default Webhook: ' + JSON.stringify(req_payload));
 
 	//Authenticate token
 	if(token === my_token) {
+		//Post to vendor bot
+		var user_chat_keys = req_payload.user_chat_id.split('|');
+		delete req_payload.user_chat_id;
+		respond_to_vendor_bot(user_chat_keys[0], user_chat_keys[2], req_payload);
 		//Acknowledge the right chat about the request
-		//TODO
-		res.status(200).end();
+		res.send('Your request has been posted.');
+		//res.status(200).end();
 	} else {
 		console.log('Token mismatch');
 		res.status(400).end();

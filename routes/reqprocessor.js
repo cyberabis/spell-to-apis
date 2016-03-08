@@ -285,6 +285,8 @@ function end_spell(user_chat_id, active_spell, spell_definition, call_outgoing_w
 							var payload = JSON.stringify(active_spell);
 							console.log('Payload to Webhook: ' + payload);
 
+							//Slice and dice webhook URL
+							//TODO
 							var options = {
 							  hostname: spell_definition.webhook,
 							  path: '/api/defaultwebhook/' + spell_definition.webhook_token,
@@ -297,9 +299,20 @@ function end_spell(user_chat_id, active_spell, spell_definition, call_outgoing_w
 							console.log('Webhook options: ' + JSON.stringify(options));
 
 							var webhook_api_req = https.request(options, function(response) {
-							  console.log("Webhook response status code: ", JSON.stringify(response));
+							  console.log("Webhook response status code: ", response.StatusCode);
 							  //Respond back to the bot
-							  //TODO
+							  var str = '';
+							  //another chunk of data has been recieved, so append it to `str`
+							  response.on('data', function (chunk) {
+							    str += chunk;
+							  });
+							  //the whole response has been recieved, so we just print it out here
+							  response.on('end', function () {
+							    console.log('Response from Outgoing Webhook: ' + str);
+							    //Send response back to Bot
+							    var user_chat_keys = user_chat_id.split('|');
+								respond_to_bot(user_chat_keys[0], user_chat_keys[2], str);
+							  });
 							});
 							webhook_api_req.on('error', function(e) {
 							  console.error(e);
