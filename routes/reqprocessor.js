@@ -287,7 +287,7 @@ function end_spell(user_chat_id, active_spell, spell_definition, call_outgoing_w
 
 							var options = {
 							  hostname: spell_definition.webhook,
-							  path: '/' + spell_definition.webhook_token,
+							  path: '/api/defaultwebhook/' + spell_definition.webhook_token,
 							  method: 'POST',
 							  headers: {
 							  	'Content-Type': 'application/json',
