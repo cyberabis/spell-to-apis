@@ -93,8 +93,7 @@ router.post('/:token', function(req, res) {
 												user_info_update = {email: req_payload.text};
 											if(required_spell_definition.question =='phone')
 												user_info_update = {phone: req_payload.text};
-											var user_chat_keys = user_chat_id.split('|');
-											myFirebaseRef.child('user_information/' + user_chat_keys[1]).update(user_info_update, function(error) {
+											myFirebaseRef.child('user_information/' + req_payload.source + '|' + req_payload.user_id).update(user_info_update, function(error) {
 												if(error) {
 													console.log('Default user information update failed. ' + JSON.stringify(active_spell));
 												} else {
@@ -304,7 +303,7 @@ function process_next_requirement(user_chat_id, active_spell, spell_definition){
 				if(next_requirement.question_type === 'user_information') {
 					//Check if user data already set.
 					var user_chat_keys = user_chat_id.split('|');
-					myFirebaseRef.child('user_information/' + user_chat_keys[1]).once('value', function(data) {
+					myFirebaseRef.child('user_information/' + user_chat_keys[0] + '|' + user_chat_keys[1]).once('value', function(data) {
 						var user_information = data.val();
 						var user_information_exists = false;
 						if(user_information != undefined && user_information != null) {
