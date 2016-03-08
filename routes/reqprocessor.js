@@ -68,7 +68,7 @@ router.post('/:token', function(req, res) {
 				//If escape command, exit the spell 
 				if(req_payload.text === 'bye') {
 					end_spell(user_chat_id, active_spell, null, false);
-					respond_to_bot(req_payload.source, req_payload.chat_id, "Ok! Quiting this request.");
+					respond_to_bot(req_payload.source, req_payload.chat_id, "Ok! Quiting previous request.");
 				} 
 				else if (active_spell.reconfirmed != undefined && active_spell.reconfirmed != null && active_spell.reconfirmed === false) {
 					//Check if confirmed by message
@@ -90,7 +90,7 @@ router.post('/:token', function(req, res) {
 					} else {
 						//Request not confirmed, lets cancel the Spell
 						end_spell(user_chat_id, active_spell, null, false);
-						respond_to_bot(req_payload.source, req_payload.chat_id, "Ok! Quiting this request.");
+						respond_to_bot(req_payload.source, req_payload.chat_id, "Ok! Quiting previous request.");
 					}
 				} else {
 					//To check answer, first get spell definition
@@ -248,7 +248,8 @@ function end_spell(user_chat_id, active_spell, spell_definition, call_outgoing_w
 			} else {
 				console.log('Updated active spell user information answer: ' + user_chat_id);
 				//Respond with a confirmation request
-				respond_to_bot(req_payload.source, req_payload.chat_id, 'This request: ' + spell_definition.description + '. To confirm type "ok", to quit type "bye".');
+				var user_chat_keys = user_chat_id.split('|');
+				respond_to_bot(user_chat_keys[0], user_chat_keys[2], 'This request: ' + spell_definition.description + '. To confirm type "ok", to quit type "bye".');
 			}
 		});
 	} else {
