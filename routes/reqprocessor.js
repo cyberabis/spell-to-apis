@@ -69,6 +69,29 @@ router.post('/:token', function(req, res) {
 				if(req_payload.text === 'bye') {
 					end_spell(user_chat_id, active_spell, null, false);
 					respond_to_bot(req_payload.source, req_payload.chat_id, "Ok! Quiting this request.");
+				} 
+				else if (active_spell.reconfirmed != undefined && active_spell.reconfirmed != null && active_spell.reconfirmed === false) {
+					//Check if confirmed by message
+					if(req_payload.text === 'ok') {
+						//End Spell
+						active_spell.reconfirmed = true;
+						//Get spell definition
+						myFirebaseRef.child('spells/' + active_spell.spell).once('value', function(data) {
+				    		var spell_definition = data.val();
+				    		if (spell_definition === undefined || spell_definition === null) {
+				    			//Invalid spell, reply back as invalid
+				    			console.log('Looks like spell definition is no longer valid: ' + active_spell.spell);
+				    			end_spell(user_chat_id, active_spell, null, false);
+				    		} else {
+				    			console.log('The request is reconfirmed, ending spell for: ' + user_chat_id);
+				    			end_spell(user_chat_id, active_spell, spell_definition, true);
+				    		}	
+				    	});
+					} else {
+						//Request not confirmed, lets cancel the Spell
+						end_spell(user_chat_id, active_spell, null, false);
+						respond_to_bot(req_payload.source, req_payload.chat_id, "Ok! Quiting this request.");
+					}
 				} else {
 					//To check answer, first get spell definition
 					myFirebaseRef.child('spells/' + active_spell.spell).once('value', function(data) {
@@ -214,31 +237,48 @@ function respond_to_bot(source, chat_id, message) {
 };
 
 function end_spell(user_chat_id, active_spell, spell_definition, call_outgoing_webhook) {
-	//Close the active spell
-	myFirebaseRef.child('user_chats/active/' + user_chat_id).remove(function(error) {
-		if (error) {
-	  		console.log('Removal failed: ' + user_chat_id);
-	  	} else {
-	  		console.log('Removed active spell: ' + user_chat_id);
-	    	//Create an old entry
-	    	var old_spell = active_spell;
-	    	old_spell.end_time = (new Date).getTime();
-	    	var formattedDate = moment(new Date()).format('YYYYMMDD');
-		    myFirebaseRef.child('user_chats/old/' + formattedDate).push(old_spell, function(error) {
-		  		if (error) {
-		    		console.log('Archive failed: ' + user_chat_id);
-		  		} else {
-		  			console.log('Successfully archived: ' + user_chat_id);
-		  			if(call_outgoing_webhook) {
-		  				//Call Outgoing Webhook
-		  				console.log('Going to make request to outgoing webhook: ' + JSON.stringify(active_spell));
-		  				console.log('Spell definition: ' + JSON.stringify(spell_definition));
-		  				//TODO
-		  			}
-		  		}
-			});
-		}
-	});
+	if( (call_outgoing_webhook = true) && 
+		(spell_definition.dont_reconfirm === undefined || spell_definition.dont_reconfirm === null || spell_definition.dont_reconfirm === false) &&
+		(active_spell.reconfirmed === undefined || active_spell.reconfirmed === null || active_spell.reconfirmed === false) ) {
+		//Mark active spell as awaiting confirmation
+		active_spell.reconfirmed = false;
+		myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
+			if(error) {
+				console.log('Error while updating active spell user information answer: ' + user_chat_id);
+			} else {
+				console.log('Updated active spell user information answer: ' + user_chat_id);
+				//Respond with a confirmation request
+				respond_to_bot(req_payload.source, req_payload.chat_id, 'This request: ' + spell_definition.description + '. To confirm type "ok", to quit type "bye".');
+			}
+		});
+	} else {
+		//Close the active spell
+		myFirebaseRef.child('user_chats/active/' + user_chat_id).remove(function(error) {
+			if (error) {
+		  		console.log('Removal failed: ' + user_chat_id);
+		  	} else {
+		  		console.log('Removed active spell: ' + user_chat_id);
+		    	//Create an old entry
+		    	var old_spell = active_spell;
+		    	old_spell.end_time = (new Date).getTime();
+		    	old_spell.user_chat_id = user_chat_id;
+		    	var formattedDate = moment(new Date()).format('YYYYMMDD');
+			    myFirebaseRef.child('user_chats/old/' + formattedDate).push(old_spell, function(error) {
+			  		if (error) {
+			    		console.log('Archive failed: ' + user_chat_id);
+			  		} else {
+			  			console.log('Successfully archived: ' + user_chat_id);
+			  			if(call_outgoing_webhook) {
+			  				//Call Outgoing Webhook
+			  				console.log('Going to make request to outgoing webhook: ' + JSON.stringify(active_spell));
+			  				console.log('Spell definition: ' + JSON.stringify(spell_definition));
+			  				//TODO
+			  			}
+			  		}
+				});
+			}
+		});
+	}
 };
 
 function process_next_requirement(user_chat_id, active_spell, spell_definition){
