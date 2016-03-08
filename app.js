@@ -18,5 +18,13 @@ app.use('/api/telegram', telegram);
 var reqprocessor = require('./routes/reqprocessor');
 app.use('/api/reqprocessor', reqprocessor);
 
+//VendorTelegram Route
+var vendortelegram = require('./routes/vendortelegram');
+app.use('/api/vendortelegram', vendortelegram);
+
+//DefaultWebhook Route
+var defaultwebhook = require('./routes/defaultwebhook');
+app.use('/api/defaultwebhook', defaultwebhook);
+
 app.listen(port);
 console.log('SpellTo APIs is listening on port: ' + port);

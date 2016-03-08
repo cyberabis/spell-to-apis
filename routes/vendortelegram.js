@@ -2,12 +2,12 @@ var express = require('express');
 var router = express.Router();
 var https = require('https');
 
-var bot_api_token = process.env.BOT_API_TOKEN;
-var my_token = process.env.TELEGRAM_TOKEN;
-var reqprocessor_token = process.env.REQPROCESSOR_TOKEN;
-var reqprocessor_host_url = process.env.REQPROCESSOR_HOST_URL;
+var vendor_bot_api_token = process.env.VENDOR_BOT_API_TOKEN;
+var my_token = process.env.VENDOR_TELEGRAM_TOKEN;
+var default_webhook_token = process.env.DEFAULT_WEBHOOK_TOKEN;
+var default_webhook_url = process.env.DEFAULT_WEBHOOK_URL;
 
-//RECEIVE MESSAGE METHOD - INVOKED BY TELEGRAM API WEBHOOK
+//RECEIVE MESSAGE METHOD - INVOKED BY VENDOR TELEGRAM API WEBHOOK
 router.post('/receive/:token', function(req, res) {
 	var token = req.params.token;
 
@@ -18,7 +18,7 @@ router.post('/receive/:token', function(req, res) {
 	
 	//Authenticate token
 	if(token === my_token) {
-		//Start: Forward Message to ReqProcessor
+		//Start: Forward Message to Default Webhook Vendor Register
 		var d = {
 			source: 'telegram',
 			update_id: update_id,
@@ -29,11 +29,11 @@ router.post('/receive/:token', function(req, res) {
 			text: message.text
 		};
 		var payload = JSON.stringify(d);
-		console.log('Payload to ReqProcessor: ' + payload);
+		console.log('Payload to DefaultWebhookVendorRegister: ' + payload);
 
 		var options = {
-		  hostname: reqprocessor_host_url,
-		  path: '/api/reqprocessor/' + reqprocessor_token,
+		  hostname: default_webhook_url,
+		  path: '/api/defaultwebhook/registervendor/' + default_webhook_token,
 		  method: 'POST',
 		  headers: {
 		  	'Content-Type': 'application/json',
@@ -42,14 +42,14 @@ router.post('/receive/:token', function(req, res) {
 		};
 
 		var reqprocessor_api_req = https.request(options, function(response) {
-		  console.log("RequestProcessor API response status code: ", response.statusCode);
+		  console.log("DefaultWebhookRegisterVendor API response status code: ", response.statusCode);
 		});
 		reqprocessor_api_req.on('error', function(e) {
 		  console.error(e);
 		});
 		reqprocessor_api_req.write(payload);
 		reqprocessor_api_req.end();
-		//End: Forward Message to ReqProcessor
+		//End: Forward Message to Default Webhook Vendor Register
 
 		res.status(200).end();
 	} else {
@@ -73,7 +73,7 @@ router.post('/send/:token', function(req, res) {
 	var text = req.body.text;
 
 	console.log('Sending text: ' + text + '. Chat id: ' + chat_id);
-	console.log('Bot API token: ' + bot_api_token);
+	console.log('Bot API token: ' + vendor_bot_api_token);
 	if(token === my_token) {
 		//Call Telegram API
 		var d = {chat_id: chat_id, text: text};
@@ -81,7 +81,7 @@ router.post('/send/:token', function(req, res) {
 
 		var options = {
 		  hostname: 'api.telegram.org',
-		  path: '/' + bot_api_token + '/sendMessage',
+		  path: '/' + vendor_bot_api_token + '/sendMessage',
 		  method: 'POST',
 		  headers: {
 		  	'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ router.post('/send/:token', function(req, res) {
 		};
 
 		var t_api_req = https.request(options, function(response) {
-		  console.log('Telegram API response status code: ', response.statusCode);
+		  console.log('Vendor Telegram API response status code: ', response.statusCode);
 		});
 		t_api_req.on('error', function(e) {
 		  console.error(e);

@@ -281,7 +281,32 @@ function end_spell(user_chat_id, active_spell, spell_definition, call_outgoing_w
 			  				//Call Outgoing Webhook
 			  				console.log('Going to make request to outgoing webhook: ' + JSON.stringify(active_spell));
 			  				console.log('Spell definition: ' + JSON.stringify(spell_definition));
-			  				//TODO
+			  				//Start: Call Webhook
+							var payload = JSON.stringify(active_spell);
+							console.log('Payload to Webhook: ' + payload);
+
+							var options = {
+							  hostname: spell_definition.webhook,
+							  path: '/' + spell_definition.webhook_token,
+							  method: 'POST',
+							  headers: {
+							  	'Content-Type': 'application/json',
+							  	'Content-Length': payload.length
+							  }
+							};
+							console.log('Webhook options: ' + JSON.stringify(options));
+
+							var webhook_api_req = https.request(options, function(response) {
+							  console.log("Webhook response status code: ", JSON.stringify(response));
+							  //Respond back to the bot
+							  //TODO
+							});
+							webhook_api_req.on('error', function(e) {
+							  console.error(e);
+							});
+							webhook_api_req.write(payload);
+							webhook_api_req.end();
+							//End: Call Webhook
 			  			}
 			  		}
 				});
