@@ -21,6 +21,7 @@ This is routes/telegram.js
 This is routes/reqprocessor.js
 1. Deploy the API app and get the https host URL 
 2. Set environment variables: 
+	FIREBASE_SECRET (From Firebase)
 	REQPROCESSOR_TOKEN (Anything we like), 
 	TELEGRAM_TOKEN (The token for our Telegram Bot)
 	TELEGRAM_HOST_URL (Host where our Telegram Bot is running).

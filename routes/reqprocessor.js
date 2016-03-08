@@ -3,6 +3,14 @@ var router = express.Router();
 var https = require('https');
 var Firebase = require("firebase");
 var myFirebaseRef = new Firebase("https://spell-to.firebaseio.com/");
+var firebase_secret = process.env.FIREBASE_SECRET;
+myFirebaseRef.authWithCustomToken(firebase_secret, function(error, authData) {
+  	if (error) {
+    	console.log("Firebase authentication Failed!", error);
+  	} else {
+    	console.log("Firebase authenticated successfully with payload:", authData);
+  	}
+});
 var moment = require('moment');
 
 var telegram_token = process.env.TELEGRAM_TOKEN;
