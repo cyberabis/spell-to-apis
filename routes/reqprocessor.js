@@ -35,7 +35,7 @@ router.post('/:token', function(req, res) {
 		console.log('User chat ID: ' + user_chat_id);
 		myFirebaseRef.child('user_chats/active/' + user_chat_id).once('value', function(data) {
 			var active_spell = data.val();
-			console.log('Active Spell: ' + data.val());
+			console.log('Active Spell: ' + JSON.stringify(data.val()));
 		  	if (active_spell === undefined || active_spell === null) {
 			    //create a new spell if command is valid
 			    var message = req_payload.text;
@@ -302,6 +302,8 @@ function process_next_requirement(user_chat_id, active_spell, spell_definition){
 							if(user_information[next_requirement.question] != undefined && user_information[next_requirement.question] != null ) {
 								user_information_exists = true;
 								//Set requirement in active_spell with default data
+								if(active_spell.requirements === undefined || active_spell.requirements === null)
+									active_spell.requirements = {};
 								active_spell.requirements[next_requirement_id] = {question: next_requirement.question, answer: user_information[next_requirement.question], status: 'auto_filled'};
 								//Update database and recurse
 								myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
@@ -329,6 +331,8 @@ function process_next_requirement(user_chat_id, active_spell, spell_definition){
 							}
 							//TODO for address, location, name etc.
 							//Update active spell and prompt for answer
+							if(active_spell.requirements === undefined || active_spell.requirements === null)
+								active_spell.requirements = {};
 							active_spell.requirements[next_requirement_id] = {question: next_requirement.question, status: 'asked'};
 							myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
 								if(error) {
@@ -344,6 +348,8 @@ function process_next_requirement(user_chat_id, active_spell, spell_definition){
 					});
 				} else if(next_requirement.question_type === 'text') {
 					//Update active spell and prompt for answer
+					if(active_spell.requirements === undefined || active_spell.requirements === null)
+						active_spell.requirements = {};
 					active_spell.requirements[next_requirement_id] = {question: next_requirement.question, status: 'asked'};
 					myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
 						if(error) {
@@ -358,6 +364,8 @@ function process_next_requirement(user_chat_id, active_spell, spell_definition){
 				} else if(next_requirement.question_type === 'options') {
 					var prompt_question = next_requirement.question + '. Type from below options: ' + JSON.stringify(spell_definition.requirements[next_requirement_id].options);
 					//Update active spell and prompt for answer
+					if(active_spell.requirements === undefined || active_spell.requirements === null)
+						active_spell.requirements = {};
 					active_spell.requirements[next_requirement_id] = {question: next_requirement.question, status: 'asked'};
 					console.log('Updating active spell with asked requirement: ' + JSON.stringify(active_spell));
 					myFirebaseRef.child('user_chats/active/' + user_chat_id).set(active_spell, function(error) {
