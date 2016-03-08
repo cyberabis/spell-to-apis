@@ -329,9 +329,9 @@ function process_next_requirement(user_chat_id, active_spell, spell_definition){
 							//Prompt to enter user information
 							var prompt_question = '';
 							if(next_requirement.question === 'email') {
-								prompt_question = 'Type your email ID. This will be a one time entry, to change later use the "contact" spell';
+								prompt_question = 'Type your email ID. This will be a one time entry, you can change it later by typing "contact".';
 							} else if(next_requirement.question === 'phone') {
-								prompt_question = 'Type your mobile phone number. This will be a one time entry, to change later use the "contact" spell';
+								prompt_question = 'Type your mobile phone number. This will be a one time entry, you can change it later by typing "contact".';
 							} else {
 								console.log('Unexpected user information question: ' + user_chat_id);
 								prompt_question = 'Type ' + next_requirement.question;
@@ -370,7 +370,14 @@ function process_next_requirement(user_chat_id, active_spell, spell_definition){
 					});
 				} else if(next_requirement.question_type === 'options') {
 					console.log('For reference, Spell Definition: ' + JSON.stringify(spell_definition));
-					var prompt_question = next_requirement.question + '. Type from below options: ' + JSON.stringify(spell_definition.requirements[next_requirement_id].options);
+					var answer_options = spell_definition.requirements[next_requirement_id].options;
+					if(answer_options instanceof Array) {
+						console.log('Answer Options is array');
+						//Remove null
+						answer_options = answer_options.filter(function(n){ return n != undefined }); 
+					}
+					console.log('For reference, Answer Options: ' + JSON.stringify(answer_options));
+					var prompt_question = next_requirement.question + '. Type your option: ' + JSON.stringify(answer_options);
 					//Update active spell and prompt for answer
 					if(active_spell.requirements === undefined || active_spell.requirements === null)
 						active_spell.requirements = {};
